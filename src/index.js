@@ -1,24 +1,12 @@
 const { GraphQLServer } = require('graphql-yoga')
 
-// schema
-const typeDefs = `
-    type Query {
-        info: String!
-        feeds: [Link!]!
-    }
-
-    type Link {
-        id: ID!
-        description: String!
-        url: String!
-    }
-`
-
 let links = [{
     id: 'link-0',
     description: 'Fullstack tutorial for GraphQL',
     url: 'www.howtographql.com'
 }]
+
+let idCount = links.length
 
 // resolvers
 const resolvers = {
@@ -27,16 +15,46 @@ const resolvers = {
         feeds: () => links
     },
     // The first argument, commonly called parent (or sometimes root) is the result of the previous resolver execution level.
-    Link: {
-        id: (parent) => parent.id,
-        description: (parent) => parent.description,
-        url: (parent) => parent.url, 
+    // Link: {
+    //     id: (parent) => parent.id,
+    //     description: (parent) => parent.description,
+    //     url: (parent) => parent.url, 
+    // },
+
+    Mutation: {
+        createPost: (parent, args) => {
+            const link = {
+                id: `link-${idCount++}`,
+                description: args.description,
+                url: args.url
+            }
+
+            links.push(link)
+            return link
+        },
+        editPost: (parent, args) => {
+            links.forEach(link => {
+                if(link.id === args.id) {
+                    link.id = args.id
+                    link.url = args.url
+                    link.description = args.description
+                }
+                return link
+            })
+        },
+        deletePost: (parent, args) => {
+            let index = links.findIndex(link => link.id === args.id)
+            let removedPost = links[index]
+            links.splice(index, 1)
+
+            return removedPost
+        } 
     }
 }
 
 // create a server and start
 const server = new GraphQLServer({
-    typeDefs,
+    typeDefs: './src/schema.graphql',
     resolvers
 })
 
